@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Trimble Extension</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f6f8;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        button {
+            padding: 10px 18px;
+            background: #1769aa;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0e4f85;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 12px;
+            background: #eef3f7;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Trimble Connect 项目信息查询</h2>
+
+    <p>这是我的第一个 Trimble Connect Web Extension。</p>
+
+    <button onclick="getProjectInfo()">
+        获取当前项目信息
+    </button>
+
+    <div id="result">
+        等待操作...
+    </div>
+
+</div>
+
+<script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
+
+<script>
+
+    // 保存 Workspace API 对象
+    let API = null;
+
+    // 初始化
+    async function init() {
+
+        try {
+
+            document.getElementById("result").innerText =
+                "正在连接 Trimble Connect...";
+
+            API = await TrimbleConnectWorkspace.connect(
+                window.parent,
+                (event, data) => {
+                    console.log("Connect Event:", event, data);
+                }
+            );
+
+            document.getElementById("result").innerText =
+                "连接成功！可以开始查询项目。";
+
+        } catch (error) {
+
+            document.getElementById("result").innerText =
+                "连接失败：" + error.message;
+
+            console.error(error);
+        }
+    }
+
+    // 获取当前项目信息
+    async function getProjectInfo() {
+
+        try {
+
+            if (!API) {
+                throw new Error("Workspace API 尚未连接");
+            }
+
+            const project = await API.project.getProject();
+
+            console.log("Project:", project);
+
+            document.getElementById("result").innerText =
+                JSON.stringify(project, null, 2);
+
+        } catch (error) {
+
+            document.getElementById("result").innerText =
+                "查询失败：" + error.message;
+
+            console.error(error);
+        }
+    }
+
+    // 页面加载后初始化
+    init();
+
+</script>
+
+</body>
+</html>
