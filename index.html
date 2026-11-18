@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -24,6 +23,13 @@
             color: #333;
         }
 
+        #status {
+            font-size: 14px;
+            color: #1769aa;
+            min-height: 20px;
+            margin-bottom: 12px;
+        }
+
         button {
             padding: 10px 18px;
             background: #1769aa;
@@ -38,26 +44,27 @@
         }
 
         #result {
-            margin-top: 20px;
+            margin-top: 14px;
             padding: 12px;
-            background: #eef3f7;
+            background: #f0f4f8;
+            border-radius: 6px;
+            font-size: 13px;
             white-space: pre-wrap;
             word-break: break-all;
+            max-height: 60vh;
+            overflow: auto;
         }
     </style>
 </head>
-
 <body>
 
 <div class="container">
 
-    <h2>Trimble Connect 项目信息查询</h2>
+    <h2>Trimble Connect 扩展测试</h2>
 
-    <p>这是我的第一个 Trimble Connect Web Extension。</p>
+    <div id="status">正在初始化...</div>
 
-    <button onclick="getProjectInfo()">
-        获取当前项目信息
-    </button>
+    <button onclick="getProjectInfo()">获取当前项目信息</button>
 
     <div id="result">
         等待操作...
@@ -65,6 +72,7 @@
 
 </div>
 
+<!-- 第 1 步：以 IIFE 方式引入 Workspace API（免 npm、免构建，官方文档给出的直连地址） -->
 <script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
 
 <script>
@@ -72,30 +80,79 @@
     // 保存 Workspace API 对象
     let API = null;
 
-    // 初始化
+    // 是否运行在 TC 的 iframe 里（直接用浏览器打开本页时 false，属正常现象）
+    function inIframe() {
+        try { return window.self !== window.top; }
+        catch (e) { return true; }
+    }
+
+    if (!inIframe() || typeof TrimbleConnectWorkspace === "undefined") {
+        document.getElementById("status").innerText =
+            "当前不在 Trimble Connect 内运行（standalone 模式，正常现象）。" +
+            "请把 https://soaringi.github.io/TCDemo/manifest.json 安装到 TC Web 项目后再试。";
+    } else {
+        init();
+    }
+
+    // 初始化连接
     async function init() {
 
         try {
 
-            document.getElementById("result").innerText =
+            document.getElementById("status").innerText =
                 "正在连接 Trimble Connect...";
 
             API = await TrimbleConnectWorkspace.connect(
-                window.parent,
-                (event, data) => {
-                    console.log("Connect Event:", event, data);
-                }
+                window.parent,      // 扩展运行在 TC 的 iframe 里，连接目标是宿主窗口
+                onEvent,            // 事件回调：TC → 扩展
+                30000               // 连接超时（毫秒）
             );
 
-            document.getElementById("result").innerText =
+            document.getElementById("status").innerText =
                 "连接成功！可以开始查询项目。";
+
+            // ★ 注册左侧导航菜单：没有这一步，扩展在 TC Web 里没有打开入口
+            //   （菜单仅支持 父菜单 + 子菜单 两级；command 会在点击时回传给本页面）
+            if (API.ui && API.ui.setMenu) {
+                API.ui.setMenu({
+                    title: "我的测试扩展",
+                    command: "demo_main_menu",
+                    subMenus: [
+                        { title: "项目信息", command: "demo_show_project" },
+                        { title: "刷新状态", command: "demo_refresh" }
+                    ]
+                });
+                if (API.ui.setActiveMenuItem) {
+                    API.ui.setActiveMenuItem("demo_show_project");
+                }
+            }
+
+            // 在 TC 底部状态条显示一条消息（证明 扩展→宿主 方向通信成功）
+            if (API.extension && API.extension.setStatusMessage) {
+                API.extension.setStatusMessage("测试扩展已就绪");
+            }
+
+            // 连接成功后自动查询一次
+            getProjectInfo();
 
         } catch (error) {
 
-            document.getElementById("result").innerText =
-                "连接失败：" + error.message;
+            document.getElementById("status").innerText =
+                "连接失败：" + (error && error.message || error);
 
             console.error(error);
+        }
+    }
+
+    // 事件处理：左侧菜单点击 / manifest 的 configCommand 都会走到这里
+    function onEvent(event, args) {
+        // 兼容官方两种示例签名：(event, data) 与 (event, args)，负载可能在 args.data 里
+        var payload = (args && typeof args === "object" && "data" in args) ? args.data : args;
+        console.log("Connect Event:", event, payload);
+
+        var cmd = String(payload);
+        if (cmd === "demo_show_project" || cmd === "demo_main_menu" || cmd === "demo_refresh") {
+            if (!API) { init(); } else { getProjectInfo(); }
         }
     }
 
@@ -108,7 +165,13 @@
                 throw new Error("Workspace API 尚未连接");
             }
 
-            const project = await API.project.getProject();
+            document.getElementById("result").innerText = "查询中...";
+
+            // 新旧版本方法名兼容：getProject（3D 扩展示例）/ getCurrentProject（Project 扩展示例）
+            var fn = API.project.getProject || API.project.getCurrentProject;
+            if (!fn) throw new Error("当前 API 版本未提供项目读取方法");
+
+            const project = await fn.call(API.project);
 
             console.log("Project:", project);
 
@@ -118,14 +181,11 @@
         } catch (error) {
 
             document.getElementById("result").innerText =
-                "查询失败：" + error.message;
+                "查询失败：" + (error && error.message || error);
 
             console.error(error);
         }
     }
-
-    // 页面加载后初始化
-    init();
 
 </script>
 

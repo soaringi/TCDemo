@@ -1,0 +1,9 @@
+{
+  "url": "https://soaringi.github.io/TCDemo/index.html",
+  "title": "我的测试扩展",
+  "icon": "https://soaringi.github.io/TCDemo/icon.svg",
+  "infoUrl": "https://github.com/soaringi/TCDemo",
+  "description": "最简 Trimble Connect Web 扩展 Demo：连接 Workspace API、注册左侧菜单、读取当前项目信息",
+  "extensionType": ["project"],
+  "enabled": true
+}
