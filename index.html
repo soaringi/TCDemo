@@ -80,6 +80,17 @@
     // 保存 Workspace API 对象
     let API = null;
 
+    // 统一日志前缀：在 TC 的 F12 控制台里过滤 "[TCDemo]" 就能看到本扩展的全部动作
+    const TAG = "[TCDemo]";
+    function log() {
+        var args = Array.prototype.slice.call(arguments);
+        args.unshift(TAG);
+        console.log.apply(console, args);
+    }
+    function pageStatus(text) {
+        document.getElementById("status").innerText = text;
+    }
+
     // 是否运行在 TC 的 iframe 里（直接用浏览器打开本页时 false，属正常现象）
     function inIframe() {
         try { return window.self !== window.top; }
@@ -87,10 +98,12 @@
     }
 
     if (!inIframe() || typeof TrimbleConnectWorkspace === "undefined") {
-        document.getElementById("status").innerText =
-            "当前不在 Trimble Connect 内运行（standalone 模式，正常现象）。" +
-            "请把 https://soaringi.github.io/TCDemo/manifest.json 安装到 TC Web 项目后再试。";
+        pageStatus("当前不在 Trimble Connect 内运行（standalone 模式，正常现象）。" +
+            "请把 https://soaringi.github.io/TCDemo/manifest.json 安装到 TC Web 项目后再试。");
+        log("standalone 模式：inIframe =", inIframe(),
+            "API 全局对象 =", typeof TrimbleConnectWorkspace);
     } else {
+        log("Workspace API 脚本已加载，检测到宿主 iframe，开始连接...");
         init();
     }
 
@@ -99,8 +112,7 @@
 
         try {
 
-            document.getElementById("status").innerText =
-                "正在连接 Trimble Connect...";
+            pageStatus("正在连接 Trimble Connect...");
 
             API = await TrimbleConnectWorkspace.connect(
                 window.parent,      // 扩展运行在 TC 的 iframe 里，连接目标是宿主窗口
@@ -108,39 +120,75 @@
                 30000               // 连接超时（毫秒）
             );
 
-            document.getElementById("status").innerText =
-                "连接成功！可以开始查询项目。";
+            pageStatus("连接成功！正在注册左侧菜单...");
 
-            // ★ 注册左侧导航菜单：没有这一步，扩展在 TC Web 里没有打开入口
+            // ★ 诊断：把可用的 API 命名空间打到控制台（F12 过滤 [TCDemo] 可见）
+            log("连接成功。API 命名空间检查：",
+                "project =", (API.project ? "有" : "无"),
+                "| ui =", (API.ui ? "有" : "无"),
+                "| user =", (API.user ? "有" : "无"),
+                "| extension =", (API.extension ? "有" : "无"),
+                "| ui.setMenu =", (API.ui && typeof API.ui.setMenu === "function" ? "可用" : "不可用"),
+                "| ui.setActiveMenuItem =", (API.ui && typeof API.ui.setActiveMenuItem === "function" ? "可用" : "不可用"));
+
+            // ★ 注册左侧导航菜单：官方示例每个菜单项都带 icon，这里补齐（icon 缺失可能导致新版导航渲染失败）
             //   （菜单仅支持 父菜单 + 子菜单 两级；command 会在点击时回传给本页面）
-            if (API.ui && API.ui.setMenu) {
-                API.ui.setMenu({
-                    title: "我的测试扩展",
-                    command: "demo_main_menu",
-                    subMenus: [
-                        { title: "项目信息", command: "demo_show_project" },
-                        { title: "刷新状态", command: "demo_refresh" }
-                    ]
-                });
-                if (API.ui.setActiveMenuItem) {
-                    API.ui.setActiveMenuItem("demo_show_project");
+            const menu = {
+                title: "我的测试扩展",
+                icon: "https://soaringi.github.io/TCDemo/icon.svg",
+                command: "demo_main_menu",
+                subMenus: [
+                    {
+                        title: "项目信息",
+                        icon: "https://soaringi.github.io/TCDemo/icon.svg",
+                        command: "demo_show_project"
+                    },
+                    {
+                        title: "刷新状态",
+                        icon: "https://soaringi.github.io/TCDemo/icon.svg",
+                        command: "demo_refresh"
+                    }
+                ]
+            };
+
+            try {
+                if (!API.ui || typeof API.ui.setMenu !== "function") {
+                    pageStatus("已连接，但当前 TC 版本未提供 ui.setMenu（菜单无法注册）");
+                    log("!! ui.setMenu 不可用，菜单无法注册");
+                } else {
+                    var r = API.ui.setMenu(menu);
+                    log("setMenu 已调用，返回值：", r);
+                    if (r && typeof r.then === "function") {
+                        r.then(function () { log("setMenu Promise resolved ✓"); },
+                               function (e) { log("setMenu Promise rejected：", e); });
+                    }
+                    if (API.ui.setActiveMenuItem) {
+                        API.ui.setActiveMenuItem("demo_show_project");
+                    }
+                    pageStatus("已连接，菜单已注册 ✓（若左侧导航仍无菜单，请把控制台 [TCDemo] 日志发回）");
+                    log("菜单注册调用完成。若左侧导航无菜单，请回传本行以上全部 [TCDemo] 日志");
                 }
+            } catch (menuErr) {
+                pageStatus("菜单注册失败：" + (menuErr && menuErr.message || menuErr));
+                log("!! setMenu 抛出异常：", menuErr);
             }
 
             // 在 TC 底部状态条显示一条消息（证明 扩展→宿主 方向通信成功）
-            if (API.extension && API.extension.setStatusMessage) {
-                API.extension.setStatusMessage("测试扩展已就绪");
-            }
+            try {
+                if (API.extension && typeof API.extension.setStatusMessage === "function") {
+                    API.extension.setStatusMessage("测试扩展已就绪");
+                    log("setStatusMessage 已调用 ✓");
+                }
+            } catch (e2) { log("setStatusMessage 异常：", e2); }
 
             // 连接成功后自动查询一次
             getProjectInfo();
 
         } catch (error) {
 
-            document.getElementById("status").innerText =
-                "连接失败：" + (error && error.message || error);
+            pageStatus("连接失败：" + (error && error.message || error));
+            console.error(TAG, "连接失败：", error);
 
-            console.error(error);
         }
     }
 
@@ -148,7 +196,7 @@
     function onEvent(event, args) {
         // 兼容官方两种示例签名：(event, data) 与 (event, args)，负载可能在 args.data 里
         var payload = (args && typeof args === "object" && "data" in args) ? args.data : args;
-        console.log("Connect Event:", event, payload);
+        log("收到事件:", event, "负载:", payload);
 
         var cmd = String(payload);
         if (cmd === "demo_show_project" || cmd === "demo_main_menu" || cmd === "demo_refresh") {
@@ -173,7 +221,7 @@
 
             const project = await fn.call(API.project);
 
-            console.log("Project:", project);
+            console.log(TAG, "项目信息:", project);
 
             document.getElementById("result").innerText =
                 JSON.stringify(project, null, 2);
@@ -183,7 +231,7 @@
             document.getElementById("result").innerText =
                 "查询失败：" + (error && error.message || error);
 
-            console.error(error);
+            console.error(TAG, "查询失败：", error);
         }
     }
 
