@@ -1,9 +1,10 @@
 {
-  "url": "https://soaringi.github.io/TCDemo/index.html",
-  "title": "我的测试扩展",
-  "icon": "https://soaringi.github.io/TCDemo/icon.svg",
-  "infoUrl": "https://github.com/soaringi/TCDemo",
-  "description": "最简 Trimble Connect Web 扩展 Demo：连接 Workspace API、注册左侧菜单、读取当前项目信息",
-  "extensionType": ["project"],
+  "url": "https://YOUR_USERNAME.github.io/tc-selection-info/index.html",
+  "title": "构件信息查看器",
+  "icon": "https://YOUR_USERNAME.github.io/tc-selection-info/icon.svg",
+  "infoUrl": "https://github.com/YOUR_USERNAME/tc-selection-info",
+  "description": "在 Trimble Connect 3D 查看器侧栏实时显示当前选中构件的信息：名称、GUID/ID、类型、所属模型、属性集、包围盒尺寸与位置。",
+  "extensionType": ["3dviewer"],
+  "configCommand": "tcselect.open",
   "enabled": true
 }

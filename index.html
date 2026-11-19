@@ -3,238 +3,1298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>My Trimble Extension</title>
-
+    <title>构件信息 · Trimble Connect 扩展</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background: #f5f6f8;
+        :root {
+            --primary: #1769aa;
+            --primary-dark: #0e4f85;
+            --bg: #f5f6f8;
+            --card: #ffffff;
+            --border: #e2e6eb;
+            --text: #263238;
+            --muted: #6b7785;
+            --ok: #2e7d32;
+            --warn: #b26a00;
+            --error: #c62828;
+            --code-bg: #f0f4f8;
         }
 
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .app {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px;
         }
 
         h2 {
-            color: #333;
+            margin: 0;
+            font-size: 17px;
+            font-weight: 600;
+            color: #1f2d3a;
         }
 
-        #status {
-            font-size: 14px;
-            color: #1769aa;
-            min-height: 20px;
+        .subtitle {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .statusbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+        }
+
+        .status-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .status-item .label {
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .status-item .value {
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 340px;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #9aa5b1;
+            flex: 0 0 auto;
+        }
+
+        .dot.ok { background: var(--ok); }
+        .dot.warn { background: var(--warn); }
+        .dot.error { background: var(--error); }
+        .dot.loading { background: #1e88e5; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 10px;
+            background: #e8f1fa;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge.muted { background: #eef0f2; color: var(--muted); }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
             margin-bottom: 12px;
         }
 
         button {
-            padding: 10px 18px;
-            background: #1769aa;
-            color: white;
+            padding: 8px 14px;
+            background: var(--primary);
+            color: #fff;
             border: none;
             border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
             cursor: pointer;
         }
 
-        button:hover {
-            background: #0e4f85;
+        button:hover { background: var(--primary-dark); }
+        button:disabled { background: #a9b4bf; cursor: not-allowed; }
+        button.secondary { background: #5c6b7a; }
+        button.secondary:hover { background: #46525e; }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
         }
 
-        #result {
-            margin-top: 14px;
-            padding: 12px;
-            background: #f0f4f8;
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2d3a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card h3 .count {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        .meta-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed var(--border);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .meta-line b { color: var(--text); font-weight: 600; }
+
+        .object-card {
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
             border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            background: #fcfdfe;
+        }
+
+        .object-title {
             font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #b0b8c0;
+            border-radius: 2px;
+            vertical-align: -2px;
+            margin-right: 4px;
+        }
+
+        dl.kv {
+            margin: 0;
+            display: grid;
+            grid-template-columns: minmax(110px, 160px) 1fr;
+            border-top: 1px solid var(--border);
+            border-left: 1px solid var(--border);
+        }
+
+        dl.kv dt,
+        dl.kv dd {
+            margin: 0;
+            padding: 5px 9px;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            word-break: break-word;
+        }
+
+        dl.kv dt {
+            background: #f4f7fa;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        dl.kv dd { background: #fff; }
+
+        .pset {
+            margin-top: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .pset-title {
+            background: #eef3f8;
+            padding: 5px 9px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .pset table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .pset th,
+        .pset td {
+            text-align: left;
+            padding: 4px 9px;
+            border-top: 1px solid var(--border);
+            word-break: break-word;
+        }
+
+        .pset th {
+            color: var(--muted);
+            font-weight: 500;
+            width: 34%;
+        }
+
+        .pset td.type {
+            width: 18%;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .notice {
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #fff8e6;
+            border: 1px solid #f0dfae;
+            color: #7a5a12;
+            font-size: 12px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 26px 16px;
+            color: var(--muted);
+        }
+
+        .empty .big { font-size: 26px; margin-bottom: 6px; }
+
+        details.raw {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+
+        details.raw summary {
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            outline: none;
+        }
+
+        pre {
+            margin: 10px 0 0;
+            padding: 12px;
+            background: var(--code-bg);
+            border-radius: 6px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 11px;
+            line-height: 1.45;
             white-space: pre-wrap;
             word-break: break-all;
-            max-height: 60vh;
+            max-height: 50vh;
             overflow: auto;
+        }
+
+        .footer {
+            color: var(--muted);
+            font-size: 11px;
+            text-align: center;
+            padding: 4px 0 10px;
+        }
+
+        code {
+            background: #eef0f2;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 11px;
         }
     </style>
 </head>
 <body>
+<div class="app">
 
-<div class="container">
-
-    <h2>Trimble Connect 扩展测试</h2>
-
-    <div id="status">正在初始化...</div>
-
-    <button onclick="getProjectInfo()">获取当前项目信息</button>
-
-    <div id="result">
-        等待操作...
+    <div class="statusbar">
+        <div class="status-item">
+            <span id="connDot" class="dot loading"></span>
+            <span class="label">连接状态</span>
+            <span id="connText" class="value">正在连接 Trimble Connect…</span>
+        </div>
+        <div class="status-item">
+            <span class="label">当前项目</span>
+            <span id="projectText" class="value">读取中…</span>
+        </div>
+        <div class="status-item">
+            <span class="label">最近事件</span>
+            <span id="lastEvent" class="badge muted">—</span>
+        </div>
+        <div class="status-item">
+            <span id="tokenBadge" class="badge muted">Token: 未启用</span>
+        </div>
     </div>
+
+    <div class="toolbar">
+        <button id="btnRead" type="button">读取当前选中</button>
+        <button id="btnClear" class="secondary" type="button">清空显示</button>
+    </div>
+
+    <div class="card">
+        <h3>选中构件信息 <span id="infoCount" class="count"></span></h3>
+        <div id="infoMeta" class="meta-line"></div>
+        <div id="infoBody">
+            <div class="empty">
+                <div class="big">◇</div>
+                <div>尚未接收到选中信息。</div>
+                <div style="margin-top:6px">请在 3D 查看器中点击任意构件；本面板会随 <code>viewer.onSelectionChanged</code> 事件实时刷新。</div>
+            </div>
+        </div>
+    </div>
+
+    <details class="raw" id="rawDetails">
+        <summary>原始响应 JSON <span id="rawSize" class="count"></span>（展开可查看 API 返回结构，便于排查）</summary>
+        <pre id="rawJson">暂无数据。</pre>
+    </details>
+
+    <div class="footer">日志前缀 <code>[TCSelect]</code> · 打开 F12 控制台过滤即可查看完整过程</div>
 
 </div>
 
-<!-- 第 1 步：以 IIFE 方式引入 Workspace API（免 npm、免构建，官方文档给出的直连地址） -->
+<!-- 以 IIFE 方式引入 Workspace API（免 npm、免构建，官方文档给出的直连地址） -->
 <script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
 
 <script>
+(function () {
+    "use strict";
 
-    // 保存 Workspace API 对象
-    let API = null;
+    /* ============================================================
+     * 配置开关：所有兼容性 / 兜底策略集中在此处，便于按需调整
+     * ============================================================ */
+    var CONFIG = {
+        CONNECT_TIMEOUT_MS: 30000,
 
-    // 统一日志前缀：在 TC 的 F12 控制台里过滤 "[TCDemo]" 就能看到本扩展的全部动作
-    const TAG = "[TCDemo]";
+        // 官方文档确认的主事件（依据：modules.html 中 SelectionCallback 的类型字面量）
+        PRIMARY_SELECTION_EVENT: "viewer.onSelectionChanged",
+
+        // 兼容 TC 其它版本可能出现的别名事件
+        EXTRA_SELECTION_EVENTS: [
+            "viewer.selectionChanged",
+            "viewer.onSelectionChange",
+            "viewer.selectedObjectsChanged",
+            "viewer.onSelectedObjectsChanged",
+            "selection.changed",
+            "selectionChanged",
+            "onSelectionChanged"
+        ],
+        ENABLE_FUZZY_EVENT_MATCH: true,   // 事件名包含 selection / selected 即视为选中事件
+
+        ENABLE_POLLING: false,            // 兜底轮询：默认关闭，事件可用时无需轮询
+        POLL_INTERVAL_MS: 1500,           // 轮询间隔（毫秒）
+        POLL_ONLY_IF_READ_API: true,      // 未发现按需读取接口时自动停止轮询
+
+        REQUEST_ACCESS_TOKEN: false,      // 本扩展不强依赖 token，默认不主动申请授权弹窗
+        ENABLE_LAYERS: true,              // 是否调用 getLayers 显示模型图层数量
+
+        MAX_OBJECTS_DISPLAY: 20,          // 单次最多渲染的对象卡片数
+        MAX_RAW_CHARS: 120000,            // 原始响应 JSON 截断长度
+        NUMBER_DIGITS: 3                  // 坐标 / 尺寸小数位
+    };
+
+    // 可能被某些 TC 版本提供的“读取当前选中”方法名（官方文档未列出，故全部做兼容探测）
+    var READ_METHOD_NAMES = [
+        "getSelectedObjects",
+        "getSelection",
+        "getSelectedObjectIds",
+        "getSelectedObjectRuntimeIds",
+        "getSelectedEntities",
+        "getSelected"
+    ];
+
+    var TAG = "[TCSelect]";
+    var $ = function (id) { return document.getElementById(id); };
+
+    var state = {
+        api: null,
+        connected: false,
+        project: null,
+        lastSelection: [],
+        lastSelectionRaw: null,
+        lastSelectionKey: "",
+        selectedEventPayload: null,
+        renderSeq: 0,
+        refreshInFlight: false,
+        pollTimer: null,
+        pollProbed: false,
+        ppEntities: [],
+        layersCache: {},
+        raw: null,
+        tokenStatus: "未启用"
+    };
+
+    /* ============================================================
+     * 日志工具：统一 [TCSelect] 前缀
+     * ============================================================ */
     function log() {
         var args = Array.prototype.slice.call(arguments);
         args.unshift(TAG);
         console.log.apply(console, args);
     }
-    function pageStatus(text) {
-        document.getElementById("status").innerText = text;
+
+    function logWarn() {
+        var args = Array.prototype.slice.call(arguments);
+        args.unshift(TAG);
+        console.warn.apply(console, args);
     }
 
-    // 是否运行在 TC 的 iframe 里（直接用浏览器打开本页时 false，属正常现象）
+    function logError() {
+        var args = Array.prototype.slice.call(arguments);
+        args.unshift(TAG);
+        console.error.apply(console, args);
+    }
+
+    function brief(value) {
+        try {
+            var text = JSON.stringify(value);
+            if (!text) return String(value);
+            return text.length > 800 ? text.substring(0, 800) + "…(已截断)" : text;
+        } catch (e) {
+            return String(value);
+        }
+    }
+
+    /* ============================================================
+     * 通用工具
+     * ============================================================ */
     function inIframe() {
         try { return window.self !== window.top; }
         catch (e) { return true; }
     }
 
-    if (!inIframe() || typeof TrimbleConnectWorkspace === "undefined") {
-        pageStatus("当前不在 Trimble Connect 内运行（standalone 模式，正常现象）。" +
-            "请把 https://soaringi.github.io/TCDemo/manifest.json 安装到 TC Web 项目后再试。");
-        log("standalone 模式：inIframe =", inIframe(),
-            "API 全局对象 =", typeof TrimbleConnectWorkspace);
-    } else {
-        log("Workspace API 脚本已加载，检测到宿主 iframe，开始连接...");
-        init();
+    function esc(value) {
+        if (value === null || value === undefined || value === "") return "—";
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
     }
 
-    // 初始化连接
-    async function init() {
+    function fmtNum(n) {
+        if (typeof n !== "number" || !isFinite(n)) return "—";
+        var text = n.toFixed(CONFIG.NUMBER_DIGITS);
+        if (text.indexOf(".") >= 0) {
+            text = text.replace(/0+$/, "").replace(/\.$/, "");
+        }
+        return text;
+    }
+
+    function fmtVec(v) {
+        if (!v || typeof v !== "object") return "—";
+        return "X " + fmtNum(v.x) + " , Y " + fmtNum(v.y) + " , Z " + fmtNum(v.z) + " (m)";
+    }
+
+    function fmtSize(box) {
+        if (!box || !box.min || !box.max) return "—";
+        var dx = Math.abs(box.max.x - box.min.x);
+        var dy = Math.abs(box.max.y - box.min.y);
+        var dz = Math.abs(box.max.z - box.min.z);
+        return fmtNum(dx) + " × " + fmtNum(dy) + " × " + fmtNum(dz) + " (X × Y × Z, m)";
+    }
+
+    function isFiniteNumber(n) {
+        return typeof n === "number" && isFinite(n);
+    }
+
+    function setConn(text, kind) {
+        $("connText").textContent = text;
+        $("connDot").className = "dot " + (kind || "");
+    }
+
+    function setToken(text, muted) {
+        state.tokenStatus = text;
+        $("tokenBadge").textContent = "Token: " + text;
+        $("tokenBadge").className = "badge" + (muted ? " muted" : "");
+    }
+
+    function isSelectionEvent(event) {
+        var name = String(event || "");
+        if (name === CONFIG.PRIMARY_SELECTION_EVENT) return true;
+        for (var i = 0; i < CONFIG.EXTRA_SELECTION_EVENTS.length; i++) {
+            if (name === CONFIG.EXTRA_SELECTION_EVENTS[i]) return true;
+        }
+        if (CONFIG.ENABLE_FUZZY_EVENT_MATCH && /selection|selected/i.test(name)) return true;
+        return false;
+    }
+
+    function selectionKey(selection) {
+        try {
+            return JSON.stringify(selection.map(function (item) {
+                return { modelId: item.modelId, runtimeIds: item.runtimeIds };
+            }));
+        } catch (e) {
+            return String(Date.now());
+        }
+    }
+
+    /**
+     * 将各种可能的 selection 负载归一化为 [{ modelId, runtimeIds, raw }]。
+     * 支持：ModelObjectIds[]、ModelObjects[]、{data|selection|objects|entities} 包裹层。
+     */
+    function extractSelection(payload, defaultModelId) {
+        var result = [];
+
+        function collect(value, depth) {
+            if (depth > 5 || value === null || value === undefined) return;
+
+            if (Array.isArray(value)) {
+                for (var i = 0; i < value.length; i++) collect(value[i], depth + 1);
+                return;
+            }
+
+            if (typeof value === "number") {
+                if (isFiniteNumber(value) && defaultModelId) {
+                    result.push({
+                        modelId: String(defaultModelId),
+                        runtimeIds: [value],
+                        raw: value
+                    });
+                }
+                return;
+            }
+
+            if (typeof value !== "object") return;
+
+            // ModelObjectIds: { modelId, objectRuntimeIds? }
+            if (typeof value.modelId === "string" && Array.isArray(value.objectRuntimeIds)) {
+                var runtimeIds = value.objectRuntimeIds.filter(isFiniteNumber);
+                // 空数组表示“取消选中”，不生成条目，交由上层走清空分支
+                if (runtimeIds.length > 0) {
+                    result.push({ modelId: value.modelId, runtimeIds: runtimeIds, raw: value });
+                }
+                return;
+            }
+
+            // ModelObjects: { modelId, objects: ObjectProperties[] }
+            if (typeof value.modelId === "string" && Array.isArray(value.objects)) {
+                var ids = [];
+                for (var j = 0; j < value.objects.length; j++) {
+                    var obj = value.objects[j];
+                    if (obj && isFiniteNumber(obj.id)) ids.push(obj.id);
+                }
+                if (ids.length > 0) {
+                    result.push({ modelId: value.modelId, runtimeIds: ids, raw: value });
+                }
+                return;
+            }
+
+            // 单层对象：{ modelId, objectRuntimeIds: 单值 }
+            if (typeof value.modelId === "string" && isFiniteNumber(value.objectRuntimeId)) {
+                result.push({
+                    modelId: value.modelId,
+                    runtimeIds: [value.objectRuntimeId],
+                    raw: value
+                });
+                return;
+            }
+
+            // 继续解包常见容器字段
+            var keys = ["selection", "data", "objects", "selectedObjects", "entities", "result", "items"];
+            for (var k = 0; k < keys.length; k++) {
+                var next = value[keys[k]];
+                if (next !== undefined && next !== null && next !== value) {
+                    collect(next, depth + 1);
+                }
+            }
+        }
+
+        collect(payload, 0);
+
+        // 按 modelId 合并 + 去重，保持首次出现顺序
+        var merged = [];
+        for (var m = 0; m < result.length; m++) {
+            var entry = result[m];
+            var found = null;
+            for (var n = 0; n < merged.length; n++) {
+                if (merged[n].modelId === entry.modelId) { found = merged[n]; break; }
+            }
+            if (!found) {
+                merged.push({
+                    modelId: entry.modelId,
+                    runtimeIds: entry.runtimeIds.slice(),
+                    raw: entry.raw
+                });
+            } else {
+                for (var r = 0; r < entry.runtimeIds.length; r++) {
+                    if (found.runtimeIds.indexOf(entry.runtimeIds[r]) < 0) {
+                        found.runtimeIds.push(entry.runtimeIds[r]);
+                    }
+                }
+            }
+        }
+
+        return merged;
+    }
+
+    /* ============================================================
+     * Workspace API 调用封装：任何异常都转为可展示结果，绝不抛出
+     * ============================================================ */
+    async function safeCall(name, fn) {
+        try {
+            var value = await fn();
+            log(name + " 返回：", brief(value));
+            return { ok: true, value: value, error: null };
+        } catch (e) {
+            var message = (e && e.message) ? e.message : String(e);
+            logWarn(name + " 调用失败：" + message);
+            return { ok: false, value: null, error: message };
+        }
+    }
+
+    function indexById(items) {
+        var map = {};
+        if (!Array.isArray(items)) return map;
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            if (item && isFiniteNumber(item.id)) map[item.id] = item;
+        }
+        return map;
+    }
+
+    /**
+     * 对单个 modelId 调用四个已确认的 ViewerAPI，汇总属性 / 包围盒 / 位置 / GUID。
+     */
+    async function enrichModel(entry) {
+        var out = {
+            modelId: entry.modelId,
+            runtimeIds: entry.runtimeIds,
+            errors: [],
+            properties: [],
+            boundingBoxes: [],
+            positions: [],
+            objectIds: [],
+            layers: []
+        };
+
+        var viewer = state.api && state.api.viewer;
+        if (!viewer) {
+            out.errors.push("当前 API 版本未提供 viewer 命名空间");
+            logWarn("ViewerAPI 不可用，无法读取构件详情");
+            return out;
+        }
+
+        var ids = entry.runtimeIds;
+        var p = await safeCall("viewer.getObjectProperties", function () {
+            return viewer.getObjectProperties(entry.modelId, ids);
+        });
+        var b = await safeCall("viewer.getObjectBoundingBoxes", function () {
+            return viewer.getObjectBoundingBoxes(entry.modelId, ids);
+        });
+        var pos = await safeCall("viewer.getObjectPositions", function () {
+            return viewer.getObjectPositions(entry.modelId, ids);
+        });
+        var oid = await safeCall("viewer.convertToObjectIds", function () {
+            return viewer.convertToObjectIds(entry.modelId, ids);
+        });
+
+        if (p.ok) out.properties = Array.isArray(p.value) ? p.value : [];
+        else out.errors.push("属性读取失败：" + p.error);
+
+        if (b.ok) out.boundingBoxes = Array.isArray(b.value) ? b.value : [];
+        else out.errors.push("包围盒读取失败：" + b.error);
+
+        if (pos.ok) out.positions = Array.isArray(pos.value) ? pos.value : [];
+        else out.errors.push("位置读取失败：" + pos.error);
+
+        if (oid.ok) out.objectIds = Array.isArray(oid.value) ? oid.value : [];
+        else out.errors.push("GUID 转换失败：" + oid.error);
+
+        if (CONFIG.ENABLE_LAYERS) {
+            var cacheKey = entry.modelId;
+            var layers = state.layersCache && state.layersCache[cacheKey];
+            if (!layers) {
+                var l = await safeCall("viewer.getLayers", function () {
+                    return viewer.getLayers(entry.modelId);
+                });
+                layers = l.ok && Array.isArray(l.value) ? l.value : [];
+                state.layersCache = state.layersCache || {};
+                state.layersCache[cacheKey] = layers;
+                if (!l.ok) out.errors.push("图层读取失败：" + l.error);
+            }
+            out.layers = layers;
+        }
+
+        return out;
+    }
+
+    /* ============================================================
+     * 渲染
+     * ============================================================ */
+    function renderEmpty(message) {
+        $("infoCount").textContent = "";
+        $("infoMeta").innerHTML = "";
+        var extra = "";
+        if (state.ppEntities && state.ppEntities.length) {
+            extra = '<div style="margin-top:8px">属性面板当前实体（FRN）：' +
+                esc(state.ppEntities.slice(0, 5).join("、")) +
+                (state.ppEntities.length > 5 ? " 等 " + state.ppEntities.length + " 个" : "") + "</div>";
+        }
+        $("infoBody").innerHTML =
+            '<div class="empty">' +
+            '<div class="big">◇</div>' +
+            '<div>' + esc(message || "当前没有选中构件。") + '</div>' +
+            '<div style="margin-top:6px">请在 3D 查看器中点击构件，或点击上方「读取当前选中」按钮。</div>' +
+            extra +
+            '</div>';
+    }
+
+    function kvRow(label, value, isHtml) {
+        return "<dt>" + esc(label) + "</dt><dd>" +
+            (isHtml ? value : esc(value)) + "</dd>";
+    }
+
+    function renderPropertySets(sets) {
+        if (!Array.isArray(sets) || sets.length === 0) return "";
+        var html = "";
+        for (var i = 0; i < sets.length; i++) {
+            var set = sets[i];
+            if (!set) continue;
+            var title = set.name || ("属性集 " + (i + 1));
+            var props = Array.isArray(set.properties) ? set.properties : [];
+            html += '<div class="pset"><div class="pset-title">' + esc(title) +
+                "（" + props.length + " 项）</div>";
+            if (props.length === 0) {
+                html += '<table><tr><td colspan="3" style="color:#6b7785">该属性集暂无属性</td></tr></table>';
+            } else {
+                html += "<table>";
+                for (var j = 0; j < props.length; j++) {
+                    var p = props[j];
+                    if (!p) continue;
+                    html += "<tr><th>" + esc(p.name) + "</th><td class=\"type\">" +
+                        esc(p.type === undefined ? "" : p.type) + "</td><td>" +
+                        esc(p.value) + "</td></tr>";
+                }
+                html += "</table>";
+            }
+            html += "</div>";
+        }
+        return html;
+    }
+
+    function renderResults(enriched, source) {
+        var objectCount = 0;
+        var modelCount = enriched.length;
+        var errorList = [];
+        var cardsHtml = "";
+
+        for (var m = 0; m < enriched.length; m++) {
+            var block = enriched[m];
+            var propMap = indexById(block.properties);
+            var boxMap = indexById(block.boundingBoxes);
+            var posMap = indexById(block.positions);
+            var idList = block.objectIds || [];
+
+            for (var e = 0; e < block.errors.length; e++) {
+                errorList.push(block.modelId + "：" + block.errors[e]);
+            }
+
+            for (var i = 0; i < block.runtimeIds.length; i++) {
+                if (objectCount >= CONFIG.MAX_OBJECTS_DISPLAY) break;
+                var rid = block.runtimeIds[i];
+                var op = propMap[rid] || null;
+                var product = (op && op.product) || {};
+                var name = product.name || op.class || ("对象 #" + rid);
+                var color = (op && op.color) ? String(op.color) : "";
+                var position = (op && op.position) ? op.position : (posMap[rid] ? posMap[rid].position : null);
+                var box = boxMap[rid] ? boxMap[rid].boundingBox : null;
+                var guid = (i < idList.length) ? idList[i] : "";
+
+                var rows = "";
+                rows += kvRow("名称", name);
+                rows += kvRow("对象类型", product.objectType);
+                rows += kvRow("产品描述", product.description);
+                rows += kvRow("类别 / Class", op && op.class);
+                rows += kvRow("运行时 ID", rid);
+                rows += kvRow("对象 ID / GUID", guid);
+                rows += kvRow("所属模型 ID", block.modelId);
+                rows += kvRow("模型图层数", isFiniteNumber(block.layers.length) ? block.layers.length + " 个" : "—");
+                if (color) {
+                    rows += kvRow("颜色", '<span class="swatch" style="background:' +
+                        esc(color) + '"></span>' + esc(color), true);
+                }
+                rows += kvRow("位置", fmtVec(position));
+                rows += kvRow("包围盒尺寸", fmtSize(box));
+                if (box && box.min && box.max) {
+                    rows += kvRow("包围盒最小点", fmtVec(box.min));
+                    rows += kvRow("包围盒最大点", fmtVec(box.max));
+                }
+
+                if (!op) {
+                    rows += kvRow("备注", "属性接口未返回该对象的数据（可能不在当前加载模型中）");
+                }
+
+                cardsHtml += '<div class="object-card">' +
+                    '<div class="object-title">◆ ' + esc(name) +
+                    '<span class="badge">#' + esc(rid) + "</span></div>" +
+                    '<dl class="kv">' + rows + "</dl>" +
+                    renderPropertySets(op && op.properties) +
+                    "</div>";
+
+                objectCount++;
+            }
+        }
+
+        if (objectCount === 0) {
+            renderEmpty("已收到选中事件，但没有可用的运行时 ID 可查询。");
+            return;
+        }
+
+        $("infoCount").textContent = "· " + objectCount + " 个对象 / " + modelCount + " 个模型";
+        $("infoMeta").innerHTML =
+            "<span>来源：<b>" + esc(source) + "</b></span>" +
+            "<span>刷新时间：<b>" + esc(new Date().toLocaleTimeString()) + "</b></span>" +
+            "<span>GUID 转换：<b>" + esc(idListSample(enriched)) + "</b></span>";
+
+        var warningHtml = "";
+        if (errorList.length) {
+            warningHtml = '<div class="notice" style="margin-bottom:10px">部分接口调用失败（已按友好降级处理）：' +
+                esc(errorList.join("；")) + "</div>";
+        }
+        if (enriched.length && countObjects(enriched) > CONFIG.MAX_OBJECTS_DISPLAY) {
+            warningHtml += '<div class="notice" style="margin-bottom:10px">选中对象较多，仅显示前 ' +
+                CONFIG.MAX_OBJECTS_DISPLAY + " 个（完整数据见下方原始响应）。</div>";
+        }
+
+        $("infoBody").innerHTML = warningHtml + cardsHtml;
+    }
+
+    function countObjects(enriched) {
+        var total = 0;
+        for (var i = 0; i < enriched.length; i++) total += enriched[i].runtimeIds.length;
+        return total;
+    }
+
+    function idListSample(enriched) {
+        for (var i = 0; i < enriched.length; i++) {
+            if (enriched[i].objectIds && enriched[i].objectIds.length) {
+                return enriched[i].objectIds.slice(0, 2).join("、") +
+                    (enriched[i].objectIds.length > 2 ? " 等" : "");
+            }
+        }
+        return "不可用 / 无返回";
+    }
+
+    function updateRaw(enriched, source) {
+        state.raw = {
+            source: source,
+            timestamp: new Date().toISOString(),
+            project: state.project,
+            lastSelection: state.lastSelection,
+            selectionEventPayload: state.selectedEventPayload,
+            propertyPanelEntities: state.ppEntities,
+            enriched: enriched
+        };
+        var text = "";
+        try {
+            text = JSON.stringify(state.raw, null, 2);
+        } catch (e) {
+            text = "JSON 序列化失败：" + String(e);
+        }
+        if (text.length > CONFIG.MAX_RAW_CHARS) {
+            text = text.substring(0, CONFIG.MAX_RAW_CHARS) + "\n…(已截断，完整对象请以控制台 [TCSelect] 日志为准)";
+        }
+        $("rawJson").textContent = text;
+        $("rawSize").textContent = "(" + text.length + " 字符)";
+        log("原始响应已更新（" + text.length + " 字符），来源：" + source);
+    }
+
+    async function enrichAndRender(selection, source) {
+        var seq = ++state.renderSeq;
+
+        if (!selection || selection.length === 0) {
+            renderEmpty("当前没有选中构件。");
+            return;
+        }
+
+        $("infoCount").textContent = "· 查询中…";
+        $("infoBody").innerHTML = '<div class="empty">正在读取构件属性、包围盒与位置…</div>';
+
+        var tasks = [];
+        for (var i = 0; i < selection.length; i++) tasks.push(enrichModel(selection[i]));
+
+        var enriched = [];
+        try {
+            enriched = await Promise.all(tasks);
+        } catch (e) {
+            logError("批量读取失败：", e);
+            enriched = [{ modelId: "—", runtimeIds: [], errors: ["批量读取失败"], properties: [],
+                boundingBoxes: [], positions: [], objectIds: [], layers: [] }];
+        }
+
+        // 防止竞态：只渲染最新一次选中
+        if (seq !== state.renderSeq) {
+            log("检测到更新的选中事件，跳过本次过期渲染（seq=" + seq + "）");
+            return;
+        }
+
+        renderResults(enriched, source);
+        updateRaw(enriched, source);
+    }
+
+    /* ============================================================
+     * 选中事件处理
+     * ============================================================ */
+    function handleSelectionEvent(eventName, payload) {
+        var selection = extractSelection(payload);
+        state.selectedEventPayload = payload;
+        log("选中事件 " + eventName + " → 归一化结果：", brief(selection));
+
+        if (selection.length === 0) {
+            state.lastSelection = [];
+            state.lastSelectionKey = "";
+            // 取消选中也是一次状态刷新：递增序号，避免仍在 await 的旧选中响应覆盖已清空面板
+            state.renderSeq++;
+            renderEmpty("选中已清空，或事件负载中没有可识别的运行时 ID。");
+            updateRaw([], eventName);
+            return;
+        }
+
+        var key = selectionKey(selection);
+        state.lastSelection = selection;
+        state.lastSelectionKey = key;
+        enrichAndRender(selection, "事件 " + eventName);
+    }
+
+    /* ============================================================
+     * 手动读取：优先探测 viewer 上的候选方法；否则给出明确提示
+     * ============================================================ */
+    function findReadMethods() {
+        var found = [];
+        var viewer = state.api && state.api.viewer;
+        if (!viewer) return found;
+        for (var i = 0; i < READ_METHOD_NAMES.length; i++) {
+            if (typeof viewer[READ_METHOD_NAMES[i]] === "function") found.push(READ_METHOD_NAMES[i]);
+        }
+        return found;
+    }
+
+    async function readCurrentSelection(options) {
+        var opts = options || {};
+        if (!state.api) {
+            if (!opts.silent) {
+                state.renderSeq++;
+                renderEmpty("尚未连接到 Trimble Connect，无法读取选中（standalone 模式下属正常现象）。");
+                logWarn("readCurrentSelection：API 未连接");
+            }
+            return;
+        }
+        if (state.refreshInFlight) {
+            log("已有读取任务在进行中，忽略本次请求");
+            return;
+        }
+
+        state.refreshInFlight = true;
+        try {
+            var methods = findReadMethods();
+            var result = null;
+            var used = "";
+
+            for (var i = 0; i < methods.length && !result; i++) {
+                var methodName = methods[i];
+                var viewer = state.api.viewer;
+                var response = await safeCall("viewer." + methodName + "()", function () {
+                    return viewer[methodName]();
+                });
+                if (response.ok && response.value !== null && response.value !== undefined) {
+                    result = response.value;
+                    used = "手动读取 viewer." + methodName;
+                }
+            }
+
+            // 备选：属性面板接口（官方文档确认存在）可返回当前实体，但为 FRN 字符串
+            if (!result && state.api.propertyPanel &&
+                typeof state.api.propertyPanel.getPropertyPanelData === "function") {
+                var pp = await safeCall("propertyPanel.getPropertyPanelData", function () {
+                    return state.api.propertyPanel.getPropertyPanelData();
+                });
+                if (pp.ok && pp.value && Array.isArray(pp.value.entities)) {
+                    state.ppEntities = pp.value.entities;
+                    used = "propertyPanel.getPropertyPanelData（FRN）";
+                }
+            }
+
+            if (!result) {
+                if (!opts.silent) {
+                    logWarn("当前 TC 版本未提供按需读取选中的接口。已探测：" +
+                        (methods.length ? methods.join(", ") : "无") +
+                        "；将使用最近一次 viewer.onSelectionChanged 缓存。");
+                }
+                if (state.lastSelection.length) {
+                    await enrichAndRender(state.lastSelection, "最近事件缓存（本版本无按需读取接口）");
+                } else {
+                    state.renderSeq++;
+                    renderEmpty("当前 TC 版本未提供按需读取选中的接口；请在 3D 查看器中点选构件以触发 viewer.onSelectionChanged 事件。");
+                    updateRaw([], "readCurrentSelection: 无可用接口");
+                }
+                return;
+            }
+
+            log("读取当前选中成功，使用接口：", used, "负载：", brief(result));
+            state.ppEntities = [];
+            var selection = extractSelection(result, result && result.modelId);
+            if (selection.length === 0) {
+                state.ppEntities = state.ppEntities || [];
+                if (state.lastSelection.length) {
+                    await enrichAndRender(state.lastSelection, "最近事件缓存（读取结果无法解析）");
+                } else {
+                    state.renderSeq++;
+                    renderEmpty("读取接口已调用，但返回内容中没有可识别的对象 ID。请点选构件后重试。");
+                    updateRaw([], used);
+                }
+                return;
+            }
+
+            var key = selectionKey(selection);
+            state.lastSelection = selection;
+            state.lastSelectionRaw = result;
+            if (key !== state.lastSelectionKey || !opts.silent) {
+                state.lastSelectionKey = key;
+                await enrichAndRender(selection, used);
+            } else {
+                log("读取结果与当前显示一致，跳过重复渲染");
+            }
+        } finally {
+            state.refreshInFlight = false;
+        }
+    }
+
+    function clearDisplay() {
+        state.lastSelection = [];
+        state.lastSelectionRaw = null;
+        state.lastSelectionKey = "";
+        state.selectedEventPayload = null;
+        state.ppEntities = [];
+        state.raw = null;
+        state.renderSeq++;
+        $("rawJson").textContent = "暂无数据。";
+        $("rawSize").textContent = "";
+        renderEmpty("显示已清空。请在 3D 查看器中重新点选构件。");
+        log("已清空显示");
+    }
+
+    /* ============================================================
+     * 事件入口
+     * ============================================================ */
+    function onEvent(event, args) {
+        // 兼容官方两种签名：(event, data) 与 (event, args)，负载可能在 args.data 里
+        var payload = (args && typeof args === "object" && "data" in args) ? args.data : args;
+        $("lastEvent").textContent = String(event || "—");
+        $("lastEvent").className = "badge";
+        log("收到事件：", event, "负载：", brief(payload));
 
         try {
+            if (event === "extension.accessToken") {
+                var tokenValue = (payload && payload.accessToken) ? payload.accessToken :
+                    (typeof payload === "string" ? payload : "");
+                if (tokenValue) {
+                    setToken("已获取（不展示内容）", false);
+                    log("已收到 accessToken 事件，长度：" + tokenValue.length);
+                } else {
+                    var tokenStatus = (payload && payload.status) ? payload.status : "未知";
+                    setToken("已响应：" + tokenStatus, true);
+                }
+                return;
+            }
 
-            pageStatus("正在连接 Trimble Connect...");
+            if (event === "extension.command") {
+                var command = (payload && payload.command) ? String(payload.command) : String(payload || "");
+                log("命令事件：", command);
+                if (command === "tcselect.open" || command === "tcselect.read" ||
+                    command === "tcselect.refresh") {
+                    readCurrentSelection();
+                } else if (command === "tcselect.clear") {
+                    clearDisplay();
+                }
+                return;
+            }
 
-            API = await TrimbleConnectWorkspace.connect(
-                window.parent,      // 扩展运行在 TC 的 iframe 里，连接目标是宿主窗口
-                onEvent,            // 事件回调：TC → 扩展
-                30000               // 连接超时（毫秒）
+            if (isSelectionEvent(event)) {
+                handleSelectionEvent(event, payload);
+                return;
+            }
+
+            // 其余事件（userSettingsChanged / sessionInvalid 等）仅记录，不干扰面板
+        } catch (e) {
+            logError("onEvent 处理异常（事件：" + event + "）：", e);
+        }
+    }
+
+    /* ============================================================
+     * 轮询兜底（默认关闭；仅在事件未触发且存在读取接口时才有意义）
+     * ============================================================ */
+    function stopPolling() {
+        if (state.pollTimer) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            log("轮询已停止");
+        }
+    }
+
+    function startPolling() {
+        if (!CONFIG.ENABLE_POLLING) {
+            log("轮询兜底已关闭（CONFIG.ENABLE_POLLING = false），依靠 viewer.onSelectionChanged 事件刷新");
+            return;
+        }
+        if (state.pollTimer) return;
+
+        state.pollTimer = setInterval(function () {
+            try {
+                if (document.hidden || !state.connected || state.refreshInFlight) return;
+                if (!state.pollProbed) {
+                    var methods = findReadMethods();
+                    if (!methods.length && CONFIG.POLL_ONLY_IF_READ_API) {
+                        log("轮询兜底：未发现可用的按需读取接口，自动停止轮询（避免无效开销）");
+                        stopPolling();
+                        return;
+                    }
+                    state.pollProbed = true;
+                }
+                readCurrentSelection({ silent: true });
+            } catch (e) {
+                logWarn("轮询异常：", e);
+            }
+        }, CONFIG.POLL_INTERVAL_MS);
+
+        log("轮询兜底已启动，间隔 " + CONFIG.POLL_INTERVAL_MS + " ms");
+    }
+
+    /* ============================================================
+     * 初始化
+     * ============================================================ */
+    async function loadProjectInfo() {
+        try {
+            var projectApi = state.api && state.api.project;
+            if (!projectApi) {
+                $("projectText").textContent = "当前版本未提供 project API";
+                return;
+            }
+            var fn = projectApi.getProject || projectApi.getCurrentProject;
+            if (typeof fn !== "function") {
+                $("projectText").textContent = "当前版本未提供项目读取方法";
+                return;
+            }
+            var project = await fn.call(projectApi);
+            state.project = project;
+            var name = project && (project.name || project.displayName) || "未命名项目";
+            var id = project && (project.id || project.projectId) || "";
+            $("projectText").textContent = name + (id ? " (" + id + ")" : "");
+            log("项目信息：", brief(project));
+        } catch (e) {
+            $("projectText").textContent = "读取失败：" + ((e && e.message) || e);
+            logWarn("项目信息读取失败：", e);
+        }
+    }
+
+    async function requestTokenIfNeeded() {
+        if (!CONFIG.REQUEST_ACCESS_TOKEN) return;
+        try {
+            if (!state.api.extension || typeof state.api.extension.requestPermission !== "function") {
+                setToken("本版本不支持", true);
+                return;
+            }
+            var status = await state.api.extension.requestPermission("accesstoken");
+            setToken(String(status || "已请求"), true);
+            log("requestPermission(accesstoken) 返回：", status);
+        } catch (e) {
+            setToken("请求失败", true);
+            logWarn("accessToken 权限请求失败：", e);
+        }
+    }
+
+    async function init() {
+        try {
+            setConn("正在连接 Trimble Connect…", "loading");
+            log("Workspace API 脚本已加载，检测到宿主 iframe，开始连接…");
+
+            state.api = await TrimbleConnectWorkspace.connect(
+                window.parent,   // 扩展运行在 TC 的 iframe 中，连接目标是宿主窗口
+                onEvent,         // TC → 扩展 事件回调
+                CONFIG.CONNECT_TIMEOUT_MS
             );
 
-            pageStatus("连接成功！正在注册左侧菜单...");
-
-            // ★ 诊断：把可用的 API 命名空间打到控制台（F12 过滤 [TCDemo] 可见）
+            state.connected = true;
             log("连接成功。API 命名空间检查：",
-                "project =", (API.project ? "有" : "无"),
-                "| ui =", (API.ui ? "有" : "无"),
-                "| user =", (API.user ? "有" : "无"),
-                "| extension =", (API.extension ? "有" : "无"),
-                "| ui.setMenu =", (API.ui && typeof API.ui.setMenu === "function" ? "可用" : "不可用"),
-                "| ui.setActiveMenuItem =", (API.ui && typeof API.ui.setActiveMenuItem === "function" ? "可用" : "不可用"));
+                "project =", (state.api.project ? "有" : "无"),
+                "| viewer =", (state.api.viewer ? "有" : "无"),
+                "| ui =", (state.api.ui ? "有" : "无"),
+                "| propertyPanel =", (state.api.propertyPanel ? "有" : "无"),
+                "| extension =", (state.api.extension ? "有" : "无"));
 
-            // ★ 注册左侧导航菜单：官方示例每个菜单项都带 icon，这里补齐（icon 缺失可能导致新版导航渲染失败）
-            //   （菜单仅支持 父菜单 + 子菜单 两级；command 会在点击时回传给本页面）
-            const menu = {
-                title: "我的测试扩展",
-                icon: "https://soaringi.github.io/TCDemo/icon.svg",
-                command: "demo_main_menu",
-                subMenus: [
-                    {
-                        title: "项目信息",
-                        icon: "https://soaringi.github.io/TCDemo/icon.svg",
-                        command: "demo_show_project"
-                    },
-                    {
-                        title: "刷新状态",
-                        icon: "https://soaringi.github.io/TCDemo/icon.svg",
-                        command: "demo_refresh"
-                    }
-                ]
-            };
+            setConn("已连接", "ok");
 
             try {
-                if (!API.ui || typeof API.ui.setMenu !== "function") {
-                    pageStatus("已连接，但当前 TC 版本未提供 ui.setMenu（菜单无法注册）");
-                    log("!! ui.setMenu 不可用，菜单无法注册");
-                } else {
-                    var r = API.ui.setMenu(menu);
-                    log("setMenu 已调用，返回值：", r);
-                    if (r && typeof r.then === "function") {
-                        r.then(function () { log("setMenu Promise resolved ✓"); },
-                               function (e) { log("setMenu Promise rejected：", e); });
-                    }
-                    if (API.ui.setActiveMenuItem) {
-                        API.ui.setActiveMenuItem("demo_show_project");
-                    }
-                    pageStatus("已连接，菜单已注册 ✓（若左侧导航仍无菜单，请把控制台 [TCDemo] 日志发回）");
-                    log("菜单注册调用完成。若左侧导航无菜单，请回传本行以上全部 [TCDemo] 日志");
+                if (state.api.extension && typeof state.api.extension.setStatusMessage === "function") {
+                    await state.api.extension.setStatusMessage("构件信息扩展已就绪");
+                    log("setStatusMessage 已调用");
                 }
-            } catch (menuErr) {
-                pageStatus("菜单注册失败：" + (menuErr && menuErr.message || menuErr));
-                log("!! setMenu 抛出异常：", menuErr);
+            } catch (e2) {
+                logWarn("setStatusMessage 异常：", e2);
             }
 
-            // 在 TC 底部状态条显示一条消息（证明 扩展→宿主 方向通信成功）
-            try {
-                if (API.extension && typeof API.extension.setStatusMessage === "function") {
-                    API.extension.setStatusMessage("测试扩展已就绪");
-                    log("setStatusMessage 已调用 ✓");
-                }
-            } catch (e2) { log("setStatusMessage 异常：", e2); }
+            await loadProjectInfo();
+            await requestTokenIfNeeded();
 
-            // 连接成功后自动查询一次
-            getProjectInfo();
+            log("开始尝试主动读取当前选中…");
+            await readCurrentSelection({ silent: true });
+
+            startPolling();
 
         } catch (error) {
-
-            pageStatus("连接失败：" + (error && error.message || error));
-            console.error(TAG, "连接失败：", error);
-
+            state.connected = false;
+            var message = (error && error.message) ? error.message : String(error);
+            setConn("连接失败：" + message, "error");
+            state.renderSeq++;
+            renderEmpty("连接失败：" + message + "。请检查网络、manifest 配置与 F12 控制台 [TCSelect] 日志。");
+            logError("连接失败：", error);
         }
     }
 
-    // 事件处理：左侧菜单点击 / manifest 的 configCommand 都会走到这里
-    function onEvent(event, args) {
-        // 兼容官方两种示例签名：(event, data) 与 (event, args)，负载可能在 args.data 里
-        var payload = (args && typeof args === "object" && "data" in args) ? args.data : args;
-        log("收到事件:", event, "负载:", payload);
+    /* ============================================================
+     * 入口
+     * ============================================================ */
+    $("btnRead").addEventListener("click", function () { readCurrentSelection(); });
+    $("btnClear").addEventListener("click", clearDisplay);
 
-        var cmd = String(payload);
-        if (cmd === "demo_show_project" || cmd === "demo_main_menu" || cmd === "demo_refresh") {
-            if (!API) { init(); } else { getProjectInfo(); }
-        }
+    if (!inIframe() || typeof TrimbleConnectWorkspace === "undefined") {
+        setConn("未连接（standalone 模式）", "warn");
+        $("projectText").textContent = "—";
+        $("lastEvent").textContent = "—";
+        state.renderSeq++;
+        renderEmpty("当前不在 Trimble Connect 中运行（standalone 模式，属正常现象）。请将本扩展部署到 HTTPS 地址并把 manifest.json 安装到 TC 项目后，在 3D 查看器侧栏打开。");
+        log("standalone 模式：inIframe =", inIframe(),
+            "API 全局对象 =", typeof TrimbleConnectWorkspace, "。页面已降级显示，不会报错。");
+    } else {
+        init();
     }
-
-    // 获取当前项目信息
-    async function getProjectInfo() {
-
-        try {
-
-            if (!API) {
-                throw new Error("Workspace API 尚未连接");
-            }
-
-            document.getElementById("result").innerText = "查询中...";
-
-            // 新旧版本方法名兼容：getProject（3D 扩展示例）/ getCurrentProject（Project 扩展示例）
-            var fn = API.project.getProject || API.project.getCurrentProject;
-            if (!fn) throw new Error("当前 API 版本未提供项目读取方法");
-
-            const project = await fn.call(API.project);
-
-            console.log(TAG, "项目信息:", project);
-
-            document.getElementById("result").innerText =
-                JSON.stringify(project, null, 2);
-
-        } catch (error) {
-
-            document.getElementById("result").innerText =
-                "查询失败：" + (error && error.message || error);
-
-            console.error(TAG, "查询失败：", error);
-        }
-    }
-
+})();
 </script>
 
 </body>
