@@ -1,10 +1,10 @@
 {
-  "url": "https://YOUR_USERNAME.github.io/tc-selection-info/index.html",
+  "url": "https://soaringi.github.io/tc-selection-info/index.html",
   "title": "构件信息查看器",
-  "icon": "https://YOUR_USERNAME.github.io/tc-selection-info/icon.svg",
-  "infoUrl": "https://github.com/YOUR_USERNAME/tc-selection-info",
+  "icon": "https://soaringi.github.io/tc-selection-info/icon.svg",
+  "infoUrl": "https://github.com/soaringi/tc-selection-info",
   "description": "在 Trimble Connect 3D 查看器侧栏实时显示当前选中构件的信息：名称、GUID/ID、类型、所属模型、属性集、包围盒尺寸与位置。",
-  "extensionType": ["3dviewer"],
+  "extensionType": [ "3dviewer" ],
   "configCommand": "tcselect.open",
   "enabled": true
 }
